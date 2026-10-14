@@ -10,46 +10,46 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==> Verifying AWS access..."
-aws sts get-caller-identity > /dev/null
+aws sts get-caller-identity >/dev/null
 
 echo "==> Removing WAF association from Amplify before destroying WAF..."
 APP_ID=$(terraform output -raw amplify_app_id 2>/dev/null || true)
 if [ -n "$APP_ID" ]; then
-  WAF_ARN=$(terraform output -raw waf_web_acl_arn 2>/dev/null || true)
-  if [ -n "$WAF_ARN" ]; then
-    aws wafv2 disassociate-web-acl \
-      --resource-arn "arn:aws:amplify:us-west-2:512629184821:apps/$APP_ID" \
-      --region us-east-1 2>/dev/null || true
-  fi
+	WAF_ARN=$(terraform output -raw waf_web_acl_arn 2>/dev/null || true)
+	if [ -n "$WAF_ARN" ]; then
+		aws wafv2 disassociate-web-acl \
+			--resource-arn "arn:aws:amplify:us-west-2:512629184821:apps/$APP_ID" \
+			--region us-east-1 2>/dev/null || true
+	fi
 fi
 
 echo "==> Planning partial teardown (Amplify + WAF)..."
 terraform plan \
-  -target=aws_amplify_domain_association.sherron_cloud \
-  -target=aws_amplify_branch.main \
-  -target=aws_amplify_app.personal_website \
-  -target=aws_wafv2_web_acl.allow_cloudflare \
-  -target=aws_wafv2_ip_set.cloudflare_ipv4 \
-  -target=aws_wafv2_ip_set.cloudflare_ipv6 \
-  -destroy
+	-target=aws_amplify_domain_association.sherron_cloud \
+	-target=aws_amplify_branch.main \
+	-target=aws_amplify_app.cf_cdn_aws_amplify \
+	-target=aws_wafv2_web_acl.allow_cloudflare \
+	-target=aws_wafv2_ip_set.cloudflare_ipv4 \
+	-target=aws_wafv2_ip_set.cloudflare_ipv6 \
+	-destroy
 
 echo ""
 echo "The following will be DESTROYED. CloudFront, ACM, and Route53 are NOT affected."
 echo "Proceed? (yes/no)"
 read -r CONFIRM
 if [ "$CONFIRM" != "yes" ]; then
-  echo "Aborted."
-  exit 1
+	echo "Aborted."
+	exit 1
 fi
 
 terraform destroy \
-  -target=aws_amplify_domain_association.sherron_cloud \
-  -target=aws_amplify_branch.main \
-  -target=aws_amplify_app.personal_website \
-  -target=aws_wafv2_web_acl.allow_cloudflare \
-  -target=aws_wafv2_ip_set.cloudflare_ipv4 \
-  -target=aws_wafv2_ip_set.cloudflare_ipv6 \
-  -auto-approve
+	-target=aws_amplify_domain_association.sherron_cloud \
+	-target=aws_amplify_branch.main \
+	-target=aws_amplify_app.cf_cdn_aws_amplify \
+	-target=aws_wafv2_web_acl.allow_cloudflare \
+	-target=aws_wafv2_ip_set.cloudflare_ipv4 \
+	-target=aws_wafv2_ip_set.cloudflare_ipv6 \
+	-auto-approve
 
 echo ""
 echo "==> Partial teardown complete."

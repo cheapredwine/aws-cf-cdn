@@ -10,7 +10,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==> Verifying AWS access..."
-aws sts get-caller-identity > /dev/null
+aws sts get-caller-identity >/dev/null
 
 echo "==> Planning full standup..."
 terraform plan
@@ -19,8 +19,8 @@ echo ""
 echo "Proceed? (yes/no)"
 read -r CONFIRM
 if [ "$CONFIRM" != "yes" ]; then
-  echo "Aborted."
-  exit 1
+	echo "Aborted."
+	exit 1
 fi
 
 terraform apply -auto-approve
@@ -31,35 +31,26 @@ APP_ID=$(terraform output -raw amplify_app_id)
 WAF_ARN=$(terraform output -raw waf_web_acl_arn)
 
 aws wafv2 associate-web-acl \
-  --web-acl-arn "$WAF_ARN" \
-  --resource-arn "arn:aws:amplify:us-west-2:512629184821:apps/$APP_ID" \
-  --region us-east-1
+	--web-acl-arn "$WAF_ARN" \
+	--resource-arn "arn:aws:amplify:us-west-2:512629184821:apps/$APP_ID" \
+	--region us-east-1
 
 STATUS=$(aws amplify get-app \
-  --region us-west-2 \
-  --app-id "$APP_ID" \
-  --query 'app.wafConfiguration.wafStatus' \
-  --output text)
+	--region us-west-2 \
+	--app-id "$APP_ID" \
+	--query 'app.wafConfiguration.wafStatus' \
+	--output text)
 
 if [ "$STATUS" != "ASSOCIATION_SUCCESS" ]; then
-  echo "WARNING: WAF association status is '$STATUS' — check the Amplify console."
+	echo "WARNING: WAF association status is '$STATUS' — check the Amplify console."
 else
-  echo "==> WAF attached successfully."
+	echo "==> WAF attached successfully."
 fi
 
 echo ""
 echo "==> Infrastructure is up. Manual steps still required:"
 echo ""
-echo "1. ACM cert validation — add this CNAME to Cloudflare (demo.jsherron.com zone):"
-aws acm describe-certificate --region us-east-1 \
-  --certificate-arn "$(terraform output -raw acm_certificate_arn)" \
-  --query 'Certificate.DomainValidationOptions[0].{Name:ResourceRecord.Name,Value:ResourceRecord.Value}' \
-  --output table
-echo ""
-echo "2. Cloudflare DNS — add/update CNAME in demo.jsherron.com zone:"
-echo "   cloudfront-pool  CNAME  $(terraform output -raw cloudfront_pool_domain)"
-echo ""
-echo "3. Route53 nameservers — check if these match your registrar:"
+echo "1. Route53 nameservers — check if these match your registrar:"
 terraform output route53_nameservers
 echo "   If not, update at: Route53 > Registered domains > sherron-cloud.com"
 echo ""
@@ -95,20 +86,20 @@ aws route53 change-resource-record-sets --hosted-zone-id "$ZONE_ID" --change-bat
 echo ""
 echo "==> Triggering Amplify deployment (will succeed once domain/cert are valid)..."
 aws amplify start-job \
-  --region us-west-2 \
-  --app-id "$APP_ID" \
-  --branch-name main \
-  --job-type RELEASE
+	--region us-west-2 \
+	--app-id "$APP_ID" \
+	--branch-name main \
+	--job-type RELEASE
 
 echo ""
 echo "!!! MANUAL STEP REQUIRED !!!"
 echo "Update Cloudflare origin configuration for sherron-cloud.com subdomains:"
 AMPLIFY_CF_DOMAIN=$(aws amplify get-domain-association \
-  --app-id "$APP_ID" \
-  --domain-name sherron-cloud.com \
-  --region us-west-2 \
-  --query 'domainAssociation.subDomains[0].dnsRecord' \
-  --output text 2>/dev/null | awk '{print $NF}')
+	--app-id "$APP_ID" \
+	--domain-name sherron-cloud.com \
+	--region us-west-2 \
+	--query 'domainAssociation.subDomains[0].dnsRecord' \
+	--output text 2>/dev/null | awk '{print $NF}')
 echo "  New Amplify CloudFront domain: ${AMPLIFY_CF_DOMAIN:-unknown}"
 echo "  In Cloudflare dashboard, update origin to point to this domain."
 echo "  Without this, images/CSS will fail with Error 1016."

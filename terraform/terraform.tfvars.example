@@ -4,5 +4,4 @@
 # Real values are stored in 1Password under "AWS CDN Demo — Terraform secrets"
 
 github_access_token     = "ghp_..."
-multicdn_demo_secret    = "XhYs..."
 cloudflare_verify_token = "97c2..."

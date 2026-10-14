@@ -31,6 +31,14 @@ resource "aws_amplify_app" "cf_cdn_aws_amplify" {
     type = "AMPLIFY_MANAGED_NO_COOKIES"
   }
 
+  custom_headers = <<-EOT
+    customHeaders:
+      - pattern: '**/*'
+        headers:
+          - key: 'Cache-Control'
+            value: 'public, max-age=120, s-maxage=120'
+  EOT
+
   # NOTE: WAF association must be managed via AWS CLI, not supported in Terraform
   # aws_amplify_app resource as of AWS provider 5.x. Standup scripts handle this
   # automatically via:
@@ -44,12 +52,12 @@ resource "aws_amplify_branch" "main" {
   stage       = "PRODUCTION"
   framework   = "Web"
 
-  enable_auto_build          = true
-  enable_notification        = false
-  enable_basic_auth          = false
+  enable_auto_build           = true
+  enable_notification         = false
+  enable_basic_auth           = false
   enable_pull_request_preview = false
-  enable_performance_mode    = false
-  ttl                        = "5"
+  enable_performance_mode     = false
+  ttl                         = "5"
 }
 
 resource "aws_amplify_domain_association" "sherron_cloud" {
