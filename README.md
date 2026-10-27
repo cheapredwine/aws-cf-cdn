@@ -1,5 +1,10 @@
 # aws-cf-cdn
 
+> ⚠️ **NOT OFFICIAL CLOUDFLARE.** Not affiliated with or endorsed by Cloudflare, Inc.
+> NO WARRANTIES, EXPRESS OR IMPLIED. Effectively untested demo code — read everything
+> and dry-run before you run. You assume all risk. See [DISCLAIMER.md](./DISCLAIMER.md).
+
+
 A complete reference architecture demonstrating Cloudflare CDN in front of AWS infrastructure: Amplify static hosting → CloudFront distribution → AWS WAF origin lockdown → Cloudflare edge caching and security.
 
 This repo contains both the **demo static site** (`src/`) and the **Terraform infrastructure** (`terraform/`) to deploy it.
